@@ -5,8 +5,8 @@ local E = {}
 AT.Encounters = E
 
 local L
-E.Init = function()
-    L = AT.Localization[GetLocale()]
+E.SetLocalization = function(Localization)
+    L = Localization
 end
 
 local CLEU = "COMBAT_LOG_EVENT_UNFILTERED"
@@ -34,7 +34,7 @@ Id[2397] = {
     },
     GetMistakes = function(Self)
         if Self.HitByPollen then
-            return L.IngraMaloch.HitByPollen
+            return L["IngraMaloch.HitByPollen"]
         end
     end    
 }

@@ -27,7 +27,8 @@ Core.OnAddonLoaded = function(Frame, Event, Name)
     if not _G[s] then _G[s] = {} end
     Core.Settings = _G[s]
 
-    AT.Encounters.Init()
+    local Localization = AT.Localization[GetLocale()]    
+    AT.Encounters.SetLocalization(Localization)
 
     Frame:UnregisterEvent("ADDON_LOADED")
 
