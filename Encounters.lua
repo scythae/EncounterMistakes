@@ -41,7 +41,23 @@ Id[2397] = {
 
 --** Mistcaller
 Id[2392] = {
- 
+    Handlers = {
+        [CLEU] = function(Self, ...)
+            args = {...}
+            if args[2] == "SPELL_AURA_APPLIED" then
+
+                local Target = args[9]
+                local SpellName = args[13]
+
+                if(SpellName == "Freezing Burst" and (UnitIsPlayer(Target) or UnitInParty(Target)) then
+                        Self.FrozenByFreezeTag = true
+                end
+                if(SpellName == "Patty Cake" and (UnitIsPlayer(Target) or UnitInParty(Target)) then
+                        Self.ConfusedByCake = true
+                end
+            end
+        end
+    }
 }
 
 --** Tred'ova

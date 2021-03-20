@@ -46,13 +46,11 @@ Core.OnEvent = function(Frame, Event, ...)
     end
 end
 
-Core.OnEncounterStart = function(Frame, ...)
-    local EncounterId = ({...})[1]
-
+Core.OnEncounterStart = function(Frame, EncounterId, Title)
     Encounter = AT.Encounters.EncounterIdList[EncounterId]
     if not Encounter then return end
 
-    Encounter.Title = ({...})[2]
+    Encounter.Title = Title
 
     local EncounterEvent, Handler
     for EncounterEvent, Handler in pairs(Encounter.Handlers) do
@@ -62,15 +60,14 @@ Core.OnEncounterStart = function(Frame, ...)
     Core.Report("Encounter started: "..Encounter.Title)
 end
 
-Core.OnEncounterEnd = function(Frame, ...)
+Core.OnEncounterEnd = function(Frame, _, _, _, _, Success)
     if not Encounter then return end
         
     for EncounterEvent, Handler in pairs(Encounter.Handlers) do
         Frame:UnregisterEvent(EncounterEvent)
     end
     
-    local Success = ({...})[5] == 1    
-    Core.Report((Success and "Victory" or "Wipe")..": "..Encounter.Title)
+    Core.Report(((Success == 1) and "Victory" or "Wipe")..": "..Encounter.Title)
     
     local Mistakes = Encounter.GetMistakes(Encounter)
     if Mistakes then Core.Report("Mistakes: "..Mistakes) end
