@@ -49,19 +49,43 @@ Id[2392] = {
                 local Target = args[9]
                 local SpellName = args[13]
 
-                if(SpellName == "Freezing Burst" and (UnitIsPlayer(Target) or UnitInParty(Target)) then
-                        Self.FrozenByFreezeTag = true
+                if (SpellName == "Freezing Burst") and (UnitIsPlayer(Target) or UnitInParty(Target)) then
+                    Self.FrozenByFreezeTag = true
                 end
-                if(SpellName == "Patty Cake" and (UnitIsPlayer(Target) or UnitInParty(Target)) then
-                        Self.ConfusedByCake = true
+                if (SpellName == "Patty Cake") and (UnitIsPlayer(Target) or UnitInParty(Target)) then
+                    Self.ConfusedByCake = true
+                end
+            end
+            if args[2] == "SPELL_DAMAGE" then
+
+                local SpellName = [13]
+
+                if SpellName == "Dodge Ball" then
+                    Self.HitByDodgeBall = true
+                elseif SpellName == "Oopsie" then
+                    Self.Oopsie = true
                 end
             end
         end
-    }
+    },
+    GetMistakes = function(Self)
+        if Self.FrozenByFreezeTag then
+            return L["Mistcaller.FrozenByFreezeTag"]
+        end
+        if Self.ConfusedByCake then
+            return L["Mistcaller.ConfusedByCake"]
+        end
+        if Self.HitByDodgeBall then
+            return L["Mistcaller.HitByDodgeBall"]
+        end
+        if Self.Oopsie then
+            return L["Mistcaller.Oopsie"]
+        end
+    end
 }
 
 --** Tred'ova
-Id[2393] = {
+Id L["Mistcaller.--**"]
  
 }
 
