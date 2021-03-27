@@ -11,7 +11,9 @@ end
 
 AddonTable.utils.printVal = function(val)
     if type(val) == "table" then
-        AddonTable.utils.printTable(val)
+        local t = {}
+        t[tostring(val)] = val
+        AddonTable.utils.printTable(t)
     else
         print(tostring(val))
     end
@@ -23,11 +25,13 @@ AddonTable.utils.printTable = function(table, indent)
 	for key, val in pairs(table)
     do
         if type(val) == "table" then
-            AddonTable.utils.printTable(val, indent..". ")
+            print(indent..key.." = {")
+            AddonTable.utils.printTable(val, indent.."__")
+            print(indent.."}")    
         else
-            print(key, tostring(val))
+            print(indent..key.." = "..tostring(val))
         end
-	end  
+    end
 end
 
 AddonTable.utils.CreateFontString = function(parentFrame, text, size, font)

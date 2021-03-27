@@ -6,6 +6,7 @@ AT.Localization = {}
 
 local Core = {}
 local Encounter
+local Localization
 
 Core.Run = function()
     local f = CreateFrame("Frame", nil, UIParent)
@@ -27,8 +28,7 @@ Core.OnAddonLoaded = function(Frame, Event, Name)
     if not _G[s] then _G[s] = {} end
     Core.Settings = _G[s]
 
-    local Localization = AT.Localization[GetLocale()]    
-    AT.Encounters.SetLocalization(Localization)
+    Localization = AT.Localization[GetLocale()]    
 
     Frame:UnregisterEvent("ADDON_LOADED")
 
@@ -52,6 +52,7 @@ Core.OnEncounterStart = function(Frame, EncounterId, Title)
     if not Encounter then return end
 
     Encounter.Title = Title
+    Encounter.StartTime = GetTime()
 
     local EncounterEvent, Handler
     for EncounterEvent, Handler in pairs(Encounter.Handlers) do
@@ -70,8 +71,10 @@ Core.OnEncounterEnd = function(Frame, _, _, _, _, Success)
     
     Core.Report(((Success == 1) and "Victory" or "Wipe")..": "..Encounter.Title)
     
-    local Mistakes = Encounter.GetMistakes(Encounter)
-    if Mistakes then Core.Report("Mistakes: "..Mistakes) end
+    local CallSuccess, Error = pcall(Core.ReportMistakes, Encounter)
+    if not CallSuccess then
+        Core.Trace("Enmi. Failed to process mistakes. "..Error)
+    end
     
     Encounter = nil
 end
@@ -89,8 +92,38 @@ Core.OnEncounterCustomEvent = function(Event, ...)
     end
 end
 
+Core.ReportMistakes = function(Encounter)
+-- assuming Mistakes scheme as follows:
+-- Mistakes = {
+--     ["HitByFire"] = {
+--         CountByPlayers = {"Player1" = 4, "Player2" = 2, "Player3" = 3} -- OptionalParam
+--     },
+--     ...
+-- }
+    if not Encounter then return end
+    local Mistakes = Encounter.GetMistakes(Encounter)
+    if not Mistakes then return end
+
+    local MistakeName, Mistake
+    for MistakeName, Mistake in pairs(Mistakes) do
+        local MistakeText = Localization[MistakeName]
+
+        Core.Report(MistakeText)
+        local CountByPlayers = Mistake.CountByPlayers
+        if CountByPlayers then
+            local BadGuys = ""
+            local Player, Count
+            for Player, Count in pairs(CountByPlayers) do
+                BadGuys = BadGuys..Player.." - "..Count..". "
+            end
+            Core.Report(BadGuys)        
+        end
+    end
+end
 
 Core.Report = print
+Core.Trace = print
+
 
 -- SlashCommand handlers --
 
