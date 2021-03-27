@@ -69,17 +69,23 @@ Id[2392] = {
         end
     },
     GetMistakes = function(Self)
+        local message = ""
+
         if Self.FrozenByFreezeTag then
-            return L["Mistcaller.FrozenByFreezeTag"]
+            message = message .. L["Mistcaller.FrozenByFreezeTag"]
         end
         if Self.ConfusedByCake then
-            return L["Mistcaller.ConfusedByCake"]
+            message = message .. L["Mistcaller.ConfusedByCake"]
         end
         if Self.HitByDodgeBall then
-            return L["Mistcaller.HitByDodgeBall"]
+            message = message .. L["Mistcaller.HitByDodgeBall"]
         end
         if Self.Oopsie then
-            return L["Mistcaller.Oopsie"]
+            message = message .. L["Mistcaller.Oopsie"]
+        end
+
+        if message != "" then
+            return message
         end
     end
 }
