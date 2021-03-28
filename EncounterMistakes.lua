@@ -2,7 +2,7 @@ local AddonName, AddonTable = ...
 local AT = AddonTable
 local SlashCommand = "/enmi"
 
-AT.Localization = {}
+AT.Localizations = {}
 
 local Core = {}
 local Encounter
@@ -28,7 +28,7 @@ Core.OnAddonLoaded = function(Frame, Event, Name)
     if not _G[s] then _G[s] = {} end
     Core.Settings = _G[s]
 
-    Localization = AT.Localization[GetLocale()]    
+    Localization = AT.Localizations[GetLocale()]    
 
     Frame:UnregisterEvent("ADDON_LOADED")
 

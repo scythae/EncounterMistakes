@@ -1,32 +1,34 @@
 local _, AddonTable = ...
+local AT = AddonTable
+local Utils = {}
+AT.utils = Utils
+AT.Utils = Utils
 
-AddonTable.utils = {}
-
-AddonTable.utils.foreach_ = function(table, func)
+Utils.foreach_ = function(table, func)
     local i
     for i = 1, #table do
         func(table[i])        
     end      
 end
 
-AddonTable.utils.printVal = function(val)
+Utils.printVal = function(val)
     if type(val) == "table" then
         local t = {}
         t[tostring(val)] = val
-        AddonTable.utils.printTable(t)
+        Utils.printTable(t)
     else
         print(tostring(val))
     end
 end
 
-AddonTable.utils.printTable = function(table, indent)
+Utils.printTable = function(table, indent)
     indent = indent or ""
 	local key, val
 	for key, val in pairs(table)
     do
         if type(val) == "table" then
             print(indent..key.." = {")
-            AddonTable.utils.printTable(val, indent.."__")
+            Utils.printTable(val, indent.."__")
             print(indent.."}")    
         else
             print(indent..key.." = "..tostring(val))
@@ -34,7 +36,7 @@ AddonTable.utils.printTable = function(table, indent)
     end
 end
 
-AddonTable.utils.CreateFontString = function(parentFrame, text, size, font)
+Utils.CreateFontString = function(parentFrame, text, size, font)
     local res = parentFrame:CreateFontString(nil, "OVERLAY")
     text = text or ""
     size = size or 18
@@ -44,4 +46,19 @@ AddonTable.utils.CreateFontString = function(parentFrame, text, size, font)
     return res
 end
 
-printVal = AddonTable.utils.printVal
+Utils.Try = function(Func, ...)
+    return Utils.TryCatch(print, Func, ...)
+end
+
+Utils.TryCatch = function(OnError, Func, ...)
+    local function DispatchCallResult(CallSuccess, ...)
+        if CallSuccess then return ... end
+
+        if type(OnError) == "function" then
+            local ErrorDetails = ({...})[1]
+            OnError(ErrorDetails)
+        end
+    end
+
+    return DispatchCallResult(pcall(Func, ...))
+end

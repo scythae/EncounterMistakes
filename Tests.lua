@@ -65,21 +65,22 @@ local function TestDelay()
     local t = {}
     t.val = 0
 
-    local func1 = function(t) 
-        Assert(t.val == 0, "delayfunc1 "..t.val)
-        t.val = 1
-    end
-    AT.Delay(1, func1, t)
-
     local func2 = function(t) 
         Assert(t.val == 1, "delayfunc2 "..t.val)
-        t.val = 2
 
         if InstantTestsHavePassed then
             print(AddonName.." tests have passed.")
         end
     end
-    AT.Delay(2, func2, t)    
+
+    local func1 = function(t) 
+        Assert(t.val == 0, "delayfunc1 "..t.val)
+        t.val = 1
+
+        AT.Delay(2, func2, t)
+    end
+
+    AT.Delay(1, func1, t)
     
     Assert(t.val == 0)
 end    

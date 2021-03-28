@@ -4,11 +4,12 @@
 ## Notes-ruRU: Отслеживает основные ошибки во время боя с боссами и сообщает об этих ошибках по окончанию боя
 ## Author: Mortarez/Triama, Popcorns
 ## SavedVariablesPerCharacter: EncounterMistakes
+Libs\Libs.xml
+
 EncounterMistakes.lua
 Encounters.lua
 EncounterMistakesGUI.lua
 
-Libs\Libs.xml
 
 Localization\En.lua
 Localization\Ru.lua

@@ -1,9 +1,9 @@
-local AddonName, AddonTable = ...
+local _, AddonTable = ...
 local AT = AddonTable
 local Locale = "enUS"
 
 local L = {}
-AT.Localization[Locale] = L
+AT.Localizations[Locale] = L
 AT.GetLocalizationDefault = function()
     local res = {}
     setmetatable(res, L)
@@ -11,7 +11,7 @@ AT.GetLocalizationDefault = function()
     return res	    
 end
 
--- We are using strings so we can easly default back to english of other locales are broken
+-- We are using strings so we can use english as a default if other locales are broken
 
 --** Ingra Maloch **--
 L["IngraMaloch.HitByPollen"] =  "Avoid standing in front of Oulfarran, when it casts blue cone of Bewildering Pollen or you get disoriented"
