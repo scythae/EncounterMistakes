@@ -1,10 +1,14 @@
 local AddonName, AddonTable = ...
+local AT = AddonTable
 
-local PrintVal = AddonTable.utils.printVal
+local PrintVal = AT.utils.printVal
+
+local InstantTestsHavePassed = false
+local DelayedTestsHavePassed = false
 
 local function Assert (Condition, ErrorText)
     if not Condition then
-        error("Assertion fail: "..(ErrorText or "anonymous"))
+        error(AddonName.." assertion fail: "..(ErrorText or "anonymous"))
     end
 end
 
@@ -41,7 +45,6 @@ local function TestErrorHandling ()
     )
 end
 
-
 local function TestPrintTable()
     local t = {
         Husband = {
@@ -58,11 +61,36 @@ local function TestPrintTable()
     PrintVal(t)    
 end
 
+local function TestDelay()
+    local t = {}
+    t.val = 0
+
+    local func1 = function(t) 
+        Assert(t.val == 0, "delayfunc1 "..t.val)
+        t.val = 1
+    end
+    AT.Delay(1, func1, t)
+
+    local func2 = function(t) 
+        Assert(t.val == 1, "delayfunc2 "..t.val)
+        t.val = 2
+
+        if InstantTestsHavePassed then
+            print(AddonName.." tests have passed.")
+        end
+    end
+    AT.Delay(2, func2, t)    
+    
+    Assert(t.val == 0)
+end    
+
+
 local function RunTests()
     -- TestPrintTable()
+    TestDelay()
     TestErrorHandling()
 
-    print("Enmi tests have passed")
+    InstantTestsHavePassed = true
 end
 
 RunTests()

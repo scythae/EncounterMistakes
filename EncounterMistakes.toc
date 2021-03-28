@@ -7,8 +7,9 @@
 EncounterMistakes.lua
 Encounters.lua
 EncounterMistakesGUI.lua
-Utils.lua
+
+Libs\Libs.xml
+
 Localization\En.lua
 Localization\Ru.lua
-
 Tests.lua
