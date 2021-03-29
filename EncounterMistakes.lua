@@ -9,7 +9,6 @@ AT.EncounterDescriptions = EncounterDescriptions
 
 local Core = {}
 local Encounter
-local Localization
 
 Core.Run = function()
     local f = CreateFrame("Frame", nil, UIParent)
@@ -31,7 +30,7 @@ Core.OnAddonLoaded = function(Frame, Event, Name)
     if not _G[s] then _G[s] = {} end
     Core.Settings = _G[s]
 
-    Localization = AT.Localizations[GetLocale()]
+    Core.Localization = AT.Localizations[GetLocale()]
 
     Frame:UnregisterEvent("ADDON_LOADED")
 
@@ -133,7 +132,7 @@ Core.AddMistake = function(MistakeName, Player)
     local M = Encounter.Mistakes[MistakeName] or {}
 
     M.Name = MistakeName
-    M.Text = Localization[MistakeName]
+    M.Text = Core.Localization[MistakeName]
 
     if Player then
         M.CountByPlayers = M.CountByPlayers or {}

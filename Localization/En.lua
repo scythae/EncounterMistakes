@@ -15,6 +15,7 @@ end
 
 --** Ingra Maloch **--
 L["IngraMaloch.HitByPollen"] = "Avoid standing in front of Oulfarran, when it casts blue cone of Bewildering Pollen or you get disoriented"
+L["IngraMaloch.LowDps"] = "Dps feels low. Try to increase it by saving big dps cooldowns for the moment Ingra Maloch is overhelmed by Droman's Wrath. For this bring Oulfarran to 20% hp first."
 
 --** Mistcaller **--
 L["Mistcaller.FrozenByFreezeTag"] = "When a blue fox appears, slow it down, CC it or even kill it. Make sure it doesn't reach anybody because it AoE freezes whoever it touches."

@@ -2,7 +2,9 @@ local _, AddonTable = ...
 
 local Id = AddonTable.EncounterDescriptions
 local AddMistake = AddonTable.AddMistake
+local Delay = AddonTable.Delay
 
+local F = {}
 local CLEU = "COMBAT_LOG_EVENT_UNFILTERED"
 
 --** Tirna Scithe **--
@@ -20,6 +22,22 @@ Id[2397] = {
                 end
             end
         end,
+        ["ENCOUNTER_START"] = function(Encounter, ...)
+            Encounter.InProgress = true
+
+            local CheckBossHP = function()
+                if not Encounter.InProgress then return end
+
+                if F.GetBossHealthPercentage() > 0.5 then
+                    AddMistake("IngraMaloch.LowDps")
+                end
+            end
+
+            Delay(90, CheckBossHP)
+        end,
+        ["ENCOUNTER_END"] = function(Encounter, ...)
+            Encounter.InProgress = false
+        end
     },
 }
 
@@ -72,3 +90,21 @@ Id[NonExistentEncounterID] =  {
         end,
     }
 }
+
+F.GetBossHealthPercentage = function(BossIndex)
+    BossIndex = BossIndex or "1"
+
+    local UnitId = "boss"..BossIndex
+    local CurrentHP = UnitHealth(UnitId)
+    local MaxHP = UnitHealthMax(UnitId)
+    if MaxHP == 0 then
+        F.Log("Cannot find boss with index "..BossIndex)
+    end
+
+    local RelativeHP = CurrentHP / MaxHP
+    return RelativeHP
+end
+
+F.Log = function(Text)
+    print(Text)
+end
