@@ -4,6 +4,9 @@ local SlashCommand = "/enmi"
 
 AT.Localizations = {}
 
+local EncounterDescriptions = {}
+AT.EncounterDescriptions = EncounterDescriptions
+
 local Core = {}
 local Encounter
 local Localization
@@ -28,7 +31,7 @@ Core.OnAddonLoaded = function(Frame, Event, Name)
     if not _G[s] then _G[s] = {} end
     Core.Settings = _G[s]
 
-    Localization = AT.Localizations[GetLocale()]    
+    Localization = AT.Localizations[GetLocale()]
 
     Frame:UnregisterEvent("ADDON_LOADED")
 
@@ -40,22 +43,27 @@ end
 Core.OnEvent = function(Frame, Event, ...)
     if Event == "ENCOUNTER_START" then
         Core.OnEncounterStart(Frame, ...)
-    elseif Event == "ENCOUNTER_END" then
+    end
+
+    Core.OnEncounterCustomEvent(Event, ...)
+
+    if Event == "ENCOUNTER_END" then
         Core.OnEncounterEnd(Frame, ...)
-    else
-        Core.OnEncounterCustomEvent(Event, ...)
     end
 end
 
 Core.OnEncounterStart = function(Frame, EncounterId, Title)
-    Encounter = AT.Encounters.EncounterIdList[EncounterId]
-    if not Encounter then return end
+    local Description = EncounterDescriptions[EncounterId]
+    if not Description then return end
 
+    Encounter = {}
     Encounter.Title = Title
     Encounter.StartTime = GetTime()
+    Encounter.Handlers = Description.Handlers or {}
+    Encounter.Mistakes = {}
 
-    local EncounterEvent, Handler
-    for EncounterEvent, Handler in pairs(Encounter.Handlers) do
+    local EncounterEvent, _
+    for EncounterEvent, _ in pairs(Encounter.Handlers) do
         Frame:RegisterEvent(EncounterEvent)
     end
 
@@ -64,18 +72,18 @@ end
 
 Core.OnEncounterEnd = function(Frame, _, _, _, _, Success)
     if not Encounter then return end
-        
-    for EncounterEvent, Handler in pairs(Encounter.Handlers) do
+
+    local EncounterEvent, _
+    for EncounterEvent, _ in pairs(Encounter.Handlers) do
         Frame:UnregisterEvent(EncounterEvent)
     end
-    
+
     Core.Report(((Success == 1) and "Victory" or "Wipe")..": "..Encounter.Title)
-    
-    local CallSuccess, Error = pcall(Core.ReportMistakes, Encounter)
-    if not CallSuccess then
-        Core.Trace("Enmi. Failed to process mistakes. "..Error)
+
+    if not Core.Settings.ShowMistakesImmediately then
+        Core.ReportAllMistakes()
     end
-    
+
     Encounter = nil
 end
 
@@ -92,32 +100,55 @@ Core.OnEncounterCustomEvent = function(Event, ...)
     end
 end
 
-Core.ReportMistakes = function(Encounter)
--- assuming Mistakes scheme as follows:
--- Mistakes = {
---     ["HitByFire"] = {
---         CountByPlayers = {"Player1" = 4, "Player2" = 2, "Player3" = 3} -- OptionalParam
---     },
---     ...
--- }
-    if not Encounter then return end
-    local Mistakes = Encounter.GetMistakes(Encounter)
-    if not Mistakes then return end
+Core.ReportAllMistakes = function()
+    if not Encounter or not Encounter.Mistakes then return end
 
-    local MistakeName, Mistake
-    for MistakeName, Mistake in pairs(Mistakes) do
-        local MistakeText = Localization[MistakeName]
+    local _, Mistake
+    for _, Mistake in pairs(Encounter.Mistakes) do
+        Core.ReportMistake(Mistake)
+    end
+end
 
-        Core.Report(MistakeText)
-        local CountByPlayers = Mistake.CountByPlayers
-        if CountByPlayers then
-            local BadGuys = ""
-            local Player, Count
-            for Player, Count in pairs(CountByPlayers) do
-                BadGuys = BadGuys..Player.." - "..Count..". "
-            end
-            Core.Report(BadGuys)        
+Core.ReportMistake = function(Mistake)
+    -- assuming Mistakes scheme as follows:
+    -- Mistakes = {
+    --     ["HitByFire"] = {
+    --         CountByPlayers = {"Player1" = 4, "Player2" = 2, "Player3" = 3} -- OptionalParam
+    --     },
+    --     ...
+    -- }
+    Core.Report(Mistake.Text)
+    local CountByPlayers = Mistake.CountByPlayers
+    if CountByPlayers then
+        local BadGuys = ""
+        local Player, Count
+        for Player, Count in pairs(CountByPlayers) do
+            BadGuys = BadGuys..Player.." - "..Count..". "
         end
+        Core.Report(BadGuys)
+    end
+end
+
+Core.AddMistake = function(MistakeName, Player)
+    local M = Encounter.Mistakes[MistakeName] or {}
+
+    M.Name = MistakeName
+    M.Text = Localization[MistakeName]
+
+    if Player then
+        M.CountByPlayers = M.CountByPlayers or {}
+        M.CountByPlayers[Player] = (M.CountByPlayers[Player] or 0) + 1
+    end
+
+    Encounter.Mistakes[MistakeName] = M
+
+    Core.OnNewEncounterMistake(M)
+end
+AT.AddMistake = Core.AddMistake
+
+Core.OnNewEncounterMistake = function(Mistake)
+    if Core.Settings.ShowMistakesImmediately then
+        Core.ReportMistake(Mistake)
     end
 end
 
@@ -128,18 +159,30 @@ Core.Trace = print
 -- SlashCommand handlers --
 
 Core.OnSlashCommand = function(Msg)
-    local Handler = Core.SlashCommands[strlower(Msg)]
-    if Handler then 
-        Core.Report(SlashCommand.." "..Msg.." command has been executed")
-        Handler()
-    else
-        Core.Report(AddonName)
+    local Dispatch = function (Command, ...)
+        local Handler = Core.SlashCommands[Command]
+        if Handler then
+            Core.Report(SlashCommand.." "..Msg.." command is being executed...")
+            Handler(...)
+        else
+            Core.SlashCommands["help"]()
+        end
     end
+
+    Dispatch(strsplit(" ", strlower(Msg)))
 end
 
 Core.SlashCommands = {}
 Core.SlashCommands["help"] = function()
-    Core.Report("No help yet")
+    Core.Report(AddonName..[[ slash commands:
+"/enmi help" - shows this help
+"/enmi smi 1" - turns ShowMistakesImmediately option on, 0 for turning off
+]]
+    )
+end
+
+Core.SlashCommands["smi"] = function(Enabled)
+    Core.Settings.ShowMistakesImmediately = Enabled == "1"
 end
 
 

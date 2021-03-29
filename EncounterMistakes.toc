@@ -3,7 +3,7 @@
 ## Notes: Tracks for common mistakes during encounter and reports them after encounter finished
 ## Notes-ruRU: Отслеживает основные ошибки во время боя с боссами и сообщает об этих ошибках по окончанию боя
 ## Author: Mortarez/Triama, Popcorns
-## SavedVariablesPerCharacter: EncounterMistakes
+## SavedVariables: EncounterMistakesSettings
 Libs\Libs.xml
 
 EncounterMistakes.lua

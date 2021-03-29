@@ -8,13 +8,13 @@ AT.GetLocalizationDefault = function()
     local res = {}
     setmetatable(res, L)
     L.__index = L
-    return res	    
+    return res
 end
 
 -- We are using strings so we can use english as a default if other locales are broken
 
 --** Ingra Maloch **--
-L["IngraMaloch.HitByPollen"] =  "Avoid standing in front of Oulfarran, when it casts blue cone of Bewildering Pollen or you get disoriented"
+L["IngraMaloch.HitByPollen"] = "Avoid standing in front of Oulfarran, when it casts blue cone of Bewildering Pollen or you get disoriented"
 
 --** Mistcaller **--
 L["Mistcaller.FrozenByFreezeTag"] = "When a blue fox appears, slow it down, CC it or even kill it. Make sure it doesn't reach anybody because it AoE freezes whoever it touches."

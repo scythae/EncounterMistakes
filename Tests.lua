@@ -16,7 +16,7 @@ local function PrintType(val)
     print(type(val))
 end
 
-local function TestErrorHandling () 
+local function TestErrorHandling ()
     local OutValues = {"OutValue1", "OutValue2"}
     local FunctionWithError = function(NeedError)
         if NeedError then
@@ -27,14 +27,14 @@ local function TestErrorHandling ()
     end
 
     local CaseText = "When wrapped with 'pcall' function raises an error, ";
-    local CallResult = {pcall(FunctionWithError, true)}    
+    local CallResult = {pcall(FunctionWithError, true)}
     Assert(CallResult[1] == false, CaseText.."first value returned by pcall should be false")
     Assert(type(CallResult[2]) == "string", CaseText.."second value returned by pcall should be a string")
     local SecondValueContainsErrorText = string.find(CallResult[2], "CustomErrorText") ~= 0
     Assert(SecondValueContainsErrorText, CaseText.."second value returned by pcall should be containing an error text")
 
     local CaseText = "When wrapped with 'pcall' function succeeds, ";
-    local CallResult = {pcall(FunctionWithError, false)}    
+    local CallResult = {pcall(FunctionWithError, false)}
     Assert(#CallResult == 1 + 3, CaseText.."pcall should return one value as a result of call plus all of the values returned by the wrapped function")
     Assert(CallResult[1] == true, CaseText.."first value returned by pcall should be true")
     Assert(
@@ -58,14 +58,14 @@ local function TestPrintTable()
         },
         YearsTogether = 6
     }
-    PrintVal(t)    
+    PrintVal(t)
 end
 
 local function TestDelay()
     local t = {}
     t.val = 0
 
-    local func2 = function(t) 
+    local func2 = function(t)
         Assert(t.val == 1, "delayfunc2 "..t.val)
 
         if InstantTestsHavePassed then
@@ -73,7 +73,7 @@ local function TestDelay()
         end
     end
 
-    local func1 = function(t) 
+    local func1 = function(t)
         Assert(t.val == 0, "delayfunc1 "..t.val)
         t.val = 1
 
@@ -81,15 +81,28 @@ local function TestDelay()
     end
 
     AT.Delay(1, func1, t)
-    
-    Assert(t.val == 0)
-end    
 
+    Assert(t.val == 0)
+end
+
+local function TestStringSplit()
+    local str = "enabled 1"
+    local t = {strsplit(" ", str)}
+    Assert(t[1] == "enabled")
+    Assert(t[2] == "1")
+
+    local str = "enabled  1"
+    local t = {strsplit(" ", str)}
+    Assert(t[1] == "enabled")
+    Assert(t[2] == "")
+    Assert(t[3] == "1")
+end
 
 local function RunTests()
     -- TestPrintTable()
     TestDelay()
     TestErrorHandling()
+    TestStringSplit()
 
     InstantTestsHavePassed = true
 end
