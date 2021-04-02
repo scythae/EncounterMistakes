@@ -9,6 +9,7 @@ AT.EncounterDescriptions = EncounterDescriptions
 
 local Core = {}
 local Encounter
+local SavedSpells
 
 Core.Run = function()
     local f = CreateFrame("Frame", nil, UIParent)
@@ -24,19 +25,23 @@ Core.OnAddonLoaded = function(Frame, Event, Name)
     Core.Report(AddonName.." - "..SlashCommand)
 
     local s = AddonName.."Settings"
-    if not _G[s] then _G[s] = {} end
-    Core.Settings = _G[s]
+    Core.Settings = _G[s] or {}
+    _G[s] = Core.Settings
 
     Core.Localization = AT.Localizations[GetLocale()]
 
-    Frame:UnregisterEvent("ADDON_LOADED")
-
-    Frame:SetScript("OnEvent", Core.OnEvent)
-    Frame:RegisterEvent("ENCOUNTER_START")
-    Frame:RegisterEvent("ENCOUNTER_END")
+    AT.SaveSpellInfo = Core.SaveSpellInfo
 
     Core.Settings.GUI = Core.Settings.GUI or {}
     AT.GUI.Show(Core.Settings.GUI)
+
+    SavedSpells = Core.Settings.SavedSpells or {}
+    Core.Settings.SavedSpells = SavedSpells
+
+    Frame:UnregisterEvent("ADDON_LOADED")
+    Frame:SetScript("OnEvent", Core.OnEvent)
+    Frame:RegisterEvent("ENCOUNTER_START")
+    Frame:RegisterEvent("ENCOUNTER_END")
 end
 
 Core.OnEvent = function(Frame, Event, ...)
@@ -57,8 +62,6 @@ Core.OnEncounterStart = function(Frame, EncounterId, Title)
     for EncounterEvent, _ in pairs(Encounter.Handlers) do
         Frame:RegisterEvent(EncounterEvent)
     end
-
-    Core.Report("Encounter started: "..Encounter.Title)
 end
 
 Core.StartEncounter = function(EncounterId, Title)
@@ -169,6 +172,19 @@ Core.OnNewEncounterMistake = function(Mistake)
     end
 end
 
+Core.SaveSpellInfo = function(SpellId, SpellName, Source, CombatLogEvent)
+    if SavedSpells[SpellId] then return end
+
+    local Spell = {}
+    Spell.Name = SpellName
+    Spell.Source = Source
+    Spell.Encounter = Encounter and Encounter.Title
+    Spell.CombatLogEvent = CombatLogEvent
+
+    SavedSpells[SpellId] = Spell
+end
+
+
 Core.Report = print
 Core.Trace = print
 
@@ -230,5 +246,8 @@ Core.SlashCommands["test"] = function()
     end)
 end
 
+Core.SlashCommands["spells"] = function()
+    AT.Utils.PrintVal(SavedSpells)
+end
 
 Core.Run()

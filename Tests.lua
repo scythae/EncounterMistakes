@@ -1,6 +1,8 @@
 local AddonName, AddonTable = ...
 local AT = AddonTable
 
+local ReportOnSuccess = false
+
 local function Assert (Condition, ErrorText)
     if not Condition then
         error(AddonName.." assertion fail: "..(ErrorText or "anonymous"))
@@ -9,6 +11,8 @@ end
 
 local Cases = {}
 local function CheckIfAllCasesPassed()
+    if not ReportOnSuccess then return end
+
     for _, Case in ipairs(Cases) do
         if not Case.Passed then
             return
