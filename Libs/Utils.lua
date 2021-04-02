@@ -4,36 +4,39 @@ local Utils = {}
 AT.utils = Utils
 AT.Utils = Utils
 
-Utils.foreach_ = function(table, func)
-    local i
+Utils.ForEach = function(table, func)
     for i = 1, #table do
-        func(table[i])        
-    end      
-end
-
-Utils.printVal = function(val)
-    if type(val) == "table" then
-        local t = {}
-        t[tostring(val)] = val
-        Utils.printTable(t)
-    else
-        print(tostring(val))
+        func(table[i])
     end
 end
 
-Utils.printTable = function(table, indent)
-    indent = indent or ""
-	local key, val
-	for key, val in pairs(table)
-    do
-        if type(val) == "table" then
-            print(indent..key.." = {")
-            Utils.printTable(val, indent.."__")
-            print(indent.."}")    
+Utils.PrintVal = function(val, indent)
+    print(Utils.ToString(val))
+end
+
+Utils.ToString = function(val, indent)
+    indent = indent or "  "
+
+    local ToString
+    ToString = function(val, oldIndent, newIndent)
+        if type(val) == "number" then
+            return val
+        elseif type(val) == "string" then
+            return '"'..val..'"'
+        elseif type(val) == "table" then
+            local s = "{\n"
+            for key, val in pairs(val)
+            do
+                s = s..newIndent.."["..ToString(key).."] = "..ToString(val, newIndent, newIndent..indent)..",\n"
+            end
+            s = s..oldIndent.."}"
+            return s
         else
-            print(indent..key.." = "..tostring(val))
+            error("Wrong key "..tostring(val))
         end
     end
+
+    return ToString(val, "", "")
 end
 
 Utils.CreateFontString = function(parentFrame, text, size, font)

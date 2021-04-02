@@ -1,22 +1,51 @@
 local AddonName, AddonTable = ...
 local AT = AddonTable
 
-local PrintVal = AT.utils.printVal
-
-local InstantTestsHavePassed = false
-local DelayedTestsHavePassed = false
-
 local function Assert (Condition, ErrorText)
     if not Condition then
         error(AddonName.." assertion fail: "..(ErrorText or "anonymous"))
     end
 end
 
-local function PrintType(val)
-    print(type(val))
+local Cases = {}
+local function CheckIfAllCasesPassed()
+    for _, Case in ipairs(Cases) do
+        if not Case.Passed then
+            return
+        end
+    end
+
+    local Report = AddonName.." tests passed:"
+    for _, Case in ipairs(Cases) do
+        Report = Report.."\n"..(Case.Title or "Unnamed").." : "..Case.Time
+    end
+
+    print(Report)
 end
 
-local function TestErrorHandling ()
+local function NewCase(Title, Func)
+    local Case = {}
+    Case.Title = Title
+    Case.Passed = false
+
+    local StartTime
+
+    function Case:Run()
+        StartTime = GetTime()
+        Func(self)
+    end
+
+    function Case:Pass()
+        self.Passed = true
+        self.Time = GetTime() - StartTime
+        CheckIfAllCasesPassed()
+    end
+
+    table.insert(Cases, Case)
+    return Case
+end
+
+NewCase("TestErrorHandling", function(Case)
     local OutValues = {"OutValue1", "OutValue2"}
     local FunctionWithError = function(NeedError)
         if NeedError then
@@ -43,14 +72,16 @@ local function TestErrorHandling ()
         CallResult[4] == "OutValue3",
         CaseText.."all values returned by pcall after the first one should be the values returned by a wrapped function"
     )
-end
 
-local function TestPrintTable()
+    Case:Pass()
+end)
+
+NewCase("TestToString", function(Case)
     local t = {
         Husband = {
             Name = "John",
             Surname = "Doe",
-            Hobbies = {"Football", "Guitar"}
+            Hobbies = {"Football", "Guitar", Additional = "Fishing", "Radio"}
         },
         Wife = {
             Name = "Jane",
@@ -58,34 +89,45 @@ local function TestPrintTable()
         },
         YearsTogether = 6
     }
-    PrintVal(t)
-end
 
-local function TestDelay()
+    local s = AT.utils.ToString(t)
+
+    local LoadTable = loadstring("return "..s)
+    local t2 = LoadTable()
+
+    Assert(type(t2) == "table", "t2 not a table")
+    Assert(
+        type(t2) == "table" and
+        t2.Husband.Hobbies[1] == "Football" and
+        t2.Wife.Name == "Jane" and
+        t2.YearsTogether == 6,
+        "TestToString"
+    )
+
+    Case:Pass()
+end)
+
+NewCase("TestDelay", function(Case)
     local t = {}
     t.val = 0
 
     local func2 = function(t)
         Assert(t.val == 1, "delayfunc2 "..t.val)
-
-        if InstantTestsHavePassed then
-            print(AddonName.." tests have passed.")
-        end
+        Case:Pass()
     end
 
     local func1 = function(t)
         Assert(t.val == 0, "delayfunc1 "..t.val)
         t.val = 1
-
         AT.Delay(2, func2, t)
     end
 
     AT.Delay(1, func1, t)
 
     Assert(t.val == 0)
-end
+end)
 
-local function TestStringSplit()
+NewCase("TestStringSplit", function(Case)
     local str = "enabled 1"
     local t = {strsplit(" ", str)}
     Assert(t[1] == "enabled")
@@ -96,15 +138,12 @@ local function TestStringSplit()
     Assert(t[1] == "enabled")
     Assert(t[2] == "")
     Assert(t[3] == "1")
+
+    Case:Pass()
+end)
+
+do
+    for _, Case in ipairs(Cases) do
+        Case:Run()
+    end
 end
-
-local function RunTests()
-    -- TestPrintTable()
-    TestDelay()
-    TestErrorHandling()
-    TestStringSplit()
-
-    InstantTestsHavePassed = true
-end
-
-RunTests()
