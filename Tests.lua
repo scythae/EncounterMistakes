@@ -127,6 +127,40 @@ NewCase("TestDelay", function(Case)
     Assert(t.val == 0)
 end)
 
+NewCase("TestQueue", function(Case)
+    local t = {}
+    t.val = 0
+
+    local Q = AT.CreateQueue()
+
+    Q:AddTask(
+        2,
+        function(t)
+            Assert(t.val == 0, "delayfunc1 "..t.val)
+            t.val = 1
+        end,
+        t
+    )
+
+    Q:AddTask(
+        1,
+        function(t)
+            Assert(t.val == 1, "delayfunc2 "..t.val)
+            t.val = 2
+        end,
+        t
+    )
+
+    Q:AddTask(
+        1,
+        function(t)
+            Assert(t.val == 2, "delayfunc3 "..t.val)
+            Case:Pass()
+        end,
+        t
+    )
+end)
+
 NewCase("TestStringSplit", function(Case)
     local str = "enabled 1"
     local t = {strsplit(" ", str)}
