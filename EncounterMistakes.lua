@@ -52,6 +52,16 @@ Core.OnEvent = function(Frame, Event, ...)
 end
 
 Core.OnEncounterStart = function(Frame, EncounterId, Title)
+    StartEncounter(EncounterId, Title)
+
+    for EncounterEvent, _ in pairs(Encounter.Handlers) do
+        Frame:RegisterEvent(EncounterEvent)
+    end
+
+    Core.Report("Encounter started: "..Encounter.Title)
+end
+
+Core.StartEncounter = function(EncounterId, Title)
     local Description = EncounterDescriptions[EncounterId]
     if not Description then return end
 
@@ -61,21 +71,21 @@ Core.OnEncounterStart = function(Frame, EncounterId, Title)
     Encounter.Handlers = Description.Handlers or {}
     Encounter.Mistakes = {}
 
-    local EncounterEvent, _
-    for EncounterEvent, _ in pairs(Encounter.Handlers) do
-        Frame:RegisterEvent(EncounterEvent)
-    end
-
     Core.Report("Encounter started: "..Encounter.Title)
 end
 
 Core.OnEncounterEnd = function(Frame, _, _, _, _, Success)
     if not Encounter then return end
 
-    local EncounterEvent, _
     for EncounterEvent, _ in pairs(Encounter.Handlers) do
         Frame:UnregisterEvent(EncounterEvent)
     end
+
+    Core.EndEncounter(Success)
+end
+
+Core.EndEncounter = function(Success)
+    if not Encounter then return end
 
     Core.Report(((Success == 1) and "Victory" or "Wipe")..": "..Encounter.Title)
 
@@ -102,7 +112,6 @@ end
 Core.ReportAllMistakes = function()
     if not Encounter or not Encounter.Mistakes then return end
 
-    local _, Mistake
     for _, Mistake in pairs(Encounter.Mistakes) do
         Core.ReportMistake(Mistake)
     end
@@ -120,7 +129,6 @@ Core.ReportMistake = function(Mistake)
     local CountByPlayers = Mistake.CountByPlayers
     if CountByPlayers then
         local BadGuys = ""
-        local Player, Count
         for Player, Count in pairs(CountByPlayers) do
             BadGuys = BadGuys..Player.." - "..Count..". "
         end
@@ -182,6 +190,28 @@ end
 
 Core.SlashCommands["smi"] = function(Enabled)
     Core.Settings.ShowMistakesImmediately = Enabled == "1"
+end
+
+Core.SlashCommands["test"] = function()
+    local OldEncounter
+    local M = Core.AddMistake
+    local Q = AT.CreateQueue()
+
+    Core.Trace("Starting encounter soon...")
+    Q:AddTask(1, function()
+        OldEncounter = Encounter
+        Core.StartEncounter(2392, "Mistcaller test")
+    end)
+    Q:AddTask(2, M, "Mistcaller.FrozenByFreezeTag", "George")
+    Q:AddTask(3, M, "Mistcaller.ConfusedByCake", "Jack")
+    Q:AddTask(4, M, "Mistcaller.HitByDodgeBall", "Jeff")
+    Q:AddTask(0, M, "Mistcaller.HitByDodgeBall", "George")
+    Q:AddTask(0, M, "Mistcaller.HitByDodgeBall", "Jack")
+    Q:AddTask(2, M, "Mistcaller.Oopsie")
+    Q:AddTask(2, function()
+        Core.EndEncounter(0)
+        Encounter = OldEncounter
+    end)
 end
 
 
