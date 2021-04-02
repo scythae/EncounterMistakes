@@ -52,7 +52,7 @@ Core.OnEvent = function(Frame, Event, ...)
 end
 
 Core.OnEncounterStart = function(Frame, EncounterId, Title)
-    StartEncounter(EncounterId, Title)
+    Core.StartEncounter(EncounterId, Title)
 
     for EncounterEvent, _ in pairs(Encounter.Handlers) do
         Frame:RegisterEvent(EncounterEvent)
