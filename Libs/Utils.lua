@@ -65,3 +65,9 @@ Utils.TryCatch = function(OnError, Func, ...)
 
     return DispatchCallResult(pcall(Func, ...))
 end
+
+Utils.GetUnitClassColor = function(Unit)
+    local Class = UnitClassBase(Unit)
+    local _, _, _, Color = GetClassColor(Class)
+    return Color -- like "7F0000FF" for half transparent blue
+end

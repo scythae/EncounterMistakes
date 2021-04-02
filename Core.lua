@@ -12,9 +12,6 @@ local Encounter
 
 Core.Run = function()
     local f = CreateFrame("Frame", nil, UIParent)
-    f:SetFrameStrata("BACKGROUND")
-    f:SetPoint("CENTER")
-    f:SetSize(1, 1)
     f:SetScript("OnEvent", Core.OnAddonLoaded)
     f:RegisterEvent("ADDON_LOADED")
 end
@@ -37,6 +34,9 @@ Core.OnAddonLoaded = function(Frame, Event, Name)
     Frame:SetScript("OnEvent", Core.OnEvent)
     Frame:RegisterEvent("ENCOUNTER_START")
     Frame:RegisterEvent("ENCOUNTER_END")
+
+    Core.Settings.GUI = Core.Settings.GUI or {}
+    AT.GUI.Show(Core.Settings.GUI)
 end
 
 Core.OnEvent = function(Frame, Event, ...)
@@ -72,6 +72,8 @@ Core.StartEncounter = function(EncounterId, Title)
     Encounter.Mistakes = {}
 
     Core.Report("Encounter started: "..Encounter.Title)
+
+    AT.GUI.Clear()
 end
 
 Core.OnEncounterEnd = function(Frame, _, _, _, _, Success)
@@ -118,13 +120,11 @@ Core.ReportAllMistakes = function()
 end
 
 Core.ReportMistake = function(Mistake)
-    -- assuming Mistakes scheme as follows:
-    -- Mistakes = {
-    --     ["HitByFire"] = {
-    --         CountByPlayers = {"Player1" = 4, "Player2" = 2, "Player3" = 3} -- OptionalParam
-    --     },
-    --     ...
-    -- }
+    --Core.ReportMistakeInChat(Mistake)
+    AT.GUI.AddMistake(Mistake)
+end
+
+Core.ReportMistakeInChat = function(Mistake)
     Core.Report(Mistake.Text)
     local CountByPlayers = Mistake.CountByPlayers
     if CountByPlayers then
@@ -137,6 +137,14 @@ Core.ReportMistake = function(Mistake)
 end
 
 Core.AddMistake = function(MistakeName, Player)
+-- assuming Mistakes scheme as follows:
+-- Mistakes = {
+--     ["HitByFire"] = {
+--         CountByPlayers = {"Player1" = 4, "Player2" = 2, "Player3" = 3} -- OptionalParam
+--     },
+--     ...
+-- }
+
     local M = Encounter.Mistakes[MistakeName] or {}
 
     M.Name = MistakeName
@@ -183,6 +191,7 @@ Core.SlashCommands = {}
 Core.SlashCommands["help"] = function()
     Core.Report(AddonName..[[ slash commands:
 "/enmi help" - shows this help
+"/enmi test" - runs an example of failed fight against Mistcaller
 "/enmi smi 1" - turns ShowMistakesImmediately option on, 0 for turning off
 ]]
     )
@@ -197,18 +206,23 @@ Core.SlashCommands["test"] = function()
     local M = Core.AddMistake
     local Q = AT.CreateQueue()
 
+    local PlayerName = UnitName("player")
+
     Core.Trace("Starting encounter soon...")
     Q:AddTask(1, function()
         OldEncounter = Encounter
         Core.StartEncounter(2392, "Mistcaller test")
     end)
-    Q:AddTask(2, M, "Mistcaller.FrozenByFreezeTag", "George")
-    Q:AddTask(3, M, "Mistcaller.ConfusedByCake", "Jack")
-    Q:AddTask(4, M, "Mistcaller.HitByDodgeBall", "Jeff")
+    Q:AddTask(1, M, "Mistcaller.FrozenByFreezeTag", PlayerName)
+    Q:AddTask(0, M, "Mistcaller.ConfusedByCake", PlayerName)
+    Q:AddTask(0, M, "Mistcaller.ConfusedByCake", "Jack")
+    Q:AddTask(1, M, "Mistcaller.HitByDodgeBall", "Jeff")
     Q:AddTask(0, M, "Mistcaller.HitByDodgeBall", "George")
     Q:AddTask(0, M, "Mistcaller.HitByDodgeBall", "Jack")
-    Q:AddTask(2, M, "Mistcaller.Oopsie")
-    Q:AddTask(2, function()
+    Q:AddTask(0, M, "Mistcaller.HitByDodgeBall", "Jack")
+    Q:AddTask(0, M, "Mistcaller.HitByDodgeBall", PlayerName)
+    Q:AddTask(0, M, "Mistcaller.Oopsie")
+    Q:AddTask(0, function()
         Core.EndEncounter(0)
         Encounter = OldEncounter
     end)
