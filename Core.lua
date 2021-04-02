@@ -80,7 +80,9 @@ Core.OnEncounterEnd = function(Frame, _, _, _, _, Success)
     if not Encounter then return end
 
     for EncounterEvent, _ in pairs(Encounter.Handlers) do
-        Frame:UnregisterEvent(EncounterEvent)
+        if not (EncounterEvent == "ENCOUNTER_START" or EncounterEvent == "ENCOUNTER_START") then
+            Frame:UnregisterEvent(EncounterEvent)
+        end
     end
 
     Core.EndEncounter(Success)
