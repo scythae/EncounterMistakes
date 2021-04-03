@@ -57,7 +57,7 @@ Core.OnEvent = function(Frame, Event, ...)
 end
 
 Core.OnEncounterStart = function(Frame, EncounterId, Title)
-    Core.StartEncounter(EncounterId, Title)
+    if not Core.StartEncounter(EncounterId, Title) then return end
 
     for EncounterEvent, _ in pairs(Encounter.Handlers) do
         Frame:RegisterEvent(EncounterEvent)
@@ -77,6 +77,8 @@ Core.StartEncounter = function(EncounterId, Title)
     Core.Report("Encounter started: "..Encounter.Title)
 
     AT.GUI.Clear()
+
+    return true
 end
 
 Core.OnEncounterEnd = function(Frame, _, _, _, _, Success)
