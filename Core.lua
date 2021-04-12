@@ -66,15 +66,15 @@ Core.OnEventInternal = function(Frame, Event, ...)
     end
 end
 
-Core.OnEncounterStart = function(Frame, EncounterId, Title)
-    if not Core.StartEncounter(EncounterId, Title) then return end
+Core.OnEncounterStart = function(Frame, EncounterId, Title, DifficultyId)
+    if not Core.StartEncounter(EncounterId, Title, DifficultyId) then return end
 
     for EncounterEvent, _ in pairs(Encounter.Handlers) do
         Frame:RegisterEvent(EncounterEvent)
     end
 end
 
-Core.StartEncounter = function(EncounterId, Title)
+Core.StartEncounter = function(EncounterId, Title, DifficultyId)
     local Description = EncounterDescriptions[EncounterId]
     if not Description then return end
 
@@ -83,6 +83,7 @@ Core.StartEncounter = function(EncounterId, Title)
     Encounter.StartTime = GetTime()
     Encounter.Handlers = Description.Handlers or {}
     Encounter.Mistakes = {}
+    Encounter.IsMythic = DifficultyId == 23 or DifficultyId == 8 -- 23 = m0; 8 = m+
 
     Core.Report("Encounter started: "..Encounter.Title)
 
@@ -118,9 +119,13 @@ end
 Core.OnEncounterCustomEvent = function(Event, ...)
     if not Encounter then return end
 
-    local Handler = Encounter.Handlers[Event]
-    if Handler then
-        Handler(Encounter, ...)
+    local Handlers = Encounter.Handlers[Event]
+    if not Handlers then return end
+
+    for _, Handler in ipairs(Handlers) do
+        if Handler then
+            Handler(Encounter, ...)
+        end
     end
 end
 
@@ -133,20 +138,26 @@ Core.ReportAllMistakes = function()
 end
 
 Core.ReportMistake = function(Mistake)
-    --Core.ReportMistakeInChat(Mistake)
+    if Core.Settings.MistakesInChatbox then
+        Core.ReportMistakeInChat(Mistake)
+    end
+
     AT.GUI.AddMistake(Mistake)
 end
 
 Core.ReportMistakeInChat = function(Mistake)
-    Core.Report(Mistake.Text)
+    local Text = Mistake.Text
+
     local CountByPlayers = Mistake.CountByPlayers
     if CountByPlayers then
         local BadGuys = ""
         for Player, Count in pairs(CountByPlayers) do
             BadGuys = BadGuys..Player.." - "..Count..". "
         end
-        Core.Report(BadGuys)
+        Text = Text.." "..BadGuys
     end
+
+    Core.Report(Text)
 end
 
 Core.AddMistake = function(MistakeName, Player)
@@ -218,14 +229,19 @@ Core.SlashCommands = {}
 Core.SlashCommands["help"] = function()
     Core.Report(AddonName..[[ slash commands:
 "/enmi help" - shows this help
-"/enmi smi 1" - turns ShowMistakesImmediately option on, 0 for turning off
 "/enmi test" - runs an example of failed fight against Mistcaller
+"/enmi smi 1" - turns ShowMistakesImmediately option on, 0 for turning off
+"/enmi mic 1" - turns MistakesInChatbox option on, 0 for turning off
 ]]
     )
 end
 
 Core.SlashCommands["smi"] = function(Enabled)
     Core.Settings.ShowMistakesImmediately = Enabled == "1"
+end
+
+Core.SlashCommands["mic"] = function(Enabled)
+    Core.Settings.MistakesInChatbox = Enabled == "1"
 end
 
 Core.SlashCommands["test"] = function()

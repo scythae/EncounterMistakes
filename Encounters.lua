@@ -7,89 +7,120 @@ local Delay = AddonTable.Delay
 local F = {}
 local CLEU = "COMBAT_LOG_EVENT_UNFILTERED"
 
+--[[
+GotHitBySpell+
+GotKilledBySpell+
+BossHpAfterTime+
+HadAuraForTooLong
+AddsLivedForTooLong
+]]
+
 --** Tirna Scithe **--
 --** Ingra Maloch
 Id[2397] = {
     Handlers = {
-        [CLEU] = function(Encounter, ...)
-            args = {...}
-            if args[2] == "SPELL_AURA_APPLIED" then
-                local Target = args[9]
-                local SpellId = args[12]
+        [CLEU] = {
+            function(Encounter, ...)
+                args = {...}
+                if args[2] == "SPELL_AURA_APPLIED" then
+                    local Target = args[9]
+                    local SpellId = args[12]
 
-                if SpellId == 323137 then -- Bewildering Pollen
-                    AddMistake("IngraMaloch.HitByPollen", Target)
+                    if SpellId == 323137 then -- Bewildering Pollen
+                        AddMistake("IngraMaloch.HitByPollen", Target)
+                    end
                 end
-            end
-        end,
-        ["ENCOUNTER_START"] = function(Encounter, ...)
-            Encounter.InProgress = true
+            end,
+        },
+        ["ENCOUNTER_START"] = {
+            function(Encounter, ...)
+                Encounter.InProgress = true
 
-            local CheckBossHP = function()
-                if not Encounter.InProgress then return end
+                local CheckBossHP = function()
+                    if not Encounter.InProgress then return end
 
-                if F.GetBossHealthPercentage() > 0.5 then
-                    AddMistake("IngraMaloch.LowDps")
+                    if F.GetBossHealthPercentage() > 0.5 then
+                        AddMistake("IngraMaloch.LowDps")
+                    end
                 end
-            end
 
-            Delay(90, CheckBossHP)
-        end,
-        ["ENCOUNTER_END"] = function(Encounter, ...)
-            Encounter.InProgress = false
-        end
+                Delay(90, CheckBossHP)
+            end,
+        },
+        ["ENCOUNTER_END"] = {
+            function(Encounter, ...)
+                Encounter.InProgress = false
+            end,
+        },
     },
 }
 
 --** Mistcaller
 Id[2392] = {
     Handlers = {
-        [CLEU] = function(Encounter, ...)
-            args = {...}
-            local Subevent = args[2]
-            local Target = args[9]
-            local SpellId = args[12]
+        [CLEU] = {
+            function(Encounter, ...)
+                args = {...}
+                local Subevent = args[2]
+                local Target = args[9]
+                local SpellId = args[12]
 
-            if Subevent == "SPELL_AURA_APPLIED" then
-                if SpellId == 321893 then -- Freezing Burst
-                    AddMistake("Mistcaller.FrozenByFreezeTag", Target)
-                elseif SpellId == 321828 then -- Patty Cake
-                    AddMistake("Mistcaller.ConfusedByCake", Target)
+                if Subevent == "SPELL_AURA_APPLIED" then
+                    if SpellId == 321893 then -- Freezing Burst
+                        AddMistake("Mistcaller.FrozenByFreezeTag", Target)
+                    elseif SpellId == 321828 then -- Patty Cake
+                        AddMistake("Mistcaller.ConfusedByCake", Target)
+                    end
                 end
-            end
-            if Subevent == "SPELL_DAMAGE" then
-                if SpellId == 321834 then --"Dodge Ball"
-                    AddMistake("Mistcaller.HitByDodgeBall", Target)
-                elseif SpellId == 321837 then --"Oopsie"
-                    AddMistake("Mistcaller.Oopsie")
+                if Subevent == "SPELL_DAMAGE" then
+                    if SpellId == 321834 then --"Dodge Ball"
+                        AddMistake("Mistcaller.HitByDodgeBall", Target)
+                    elseif SpellId == 321837 then --"Oopsie"
+                        AddMistake("Mistcaller.Oopsie")
+                    end
                 end
-            end
-        end
+            end,
+        },
     },
 }
 
-local Stub_SpellsRegistrationHandlers = {
-    [CLEU] = function(Encounter, ...)
-        args = {...}
-        local Source = args[5]
-        if UnitPlayerControlled(Source) or UnitPlayerOrPetInParty(Source) then return end
+local SpellsRegistrationHandler = function(Encounter, ...)
+    args = {...}
+    local Source = args[5]
+    if UnitPlayerControlled(Source) or UnitPlayerOrPetInParty(Source) then return end
 
-        local Subevent = args[2]
-        if string.sub(Subevent, 1, 5) ~= "SPELL" then return end
+    local Subevent = args[2]
+    if string.sub(Subevent, 1, 5) ~= "SPELL" then return end
 
-        local SpellId, SpellName
-        if Subevent == "SPELL_ABSORBED" then
-            SpellId = args[16]
-            SpellName = args[17]
-        else
-            SpellId = args[12]
-            SpellName = args[13]
-        end
+    local SpellId, SpellName
+    if Subevent == "SPELL_ABSORBED" then
+        SpellId = args[16]
+        SpellName = args[17]
+    else
+        SpellId = args[12]
+        SpellName = args[13]
+    end
 
-        if SpellId then
-            AddonTable.SaveSpellInfo(SpellId, SpellName, Source, Subevent)
+    if SpellId then
+        AddonTable.SaveSpellInfo(SpellId, SpellName, Source, Subevent)
+    end
+
+    if Subevent == "SPELL_DAMAGE" then
+        local OverkillDamage = args[16]
+        if OverkillDamage > 0 then
+            local Target = args[9]
+            local SpellId = args[12]
+            local SpellName = args[13]
+
+            print(Target.." got killed by "..(SpellName or "nil").." "..(SpellId or "nil"))
         end
     end
+end
+
+local Stub_SpellsRegistrationHandlers = {
+    [CLEU] = {
+        SpellsRegistrationHandler,
+    },
 }
 
 --** Tred'ova
@@ -133,7 +164,33 @@ Id[2361] = {
 
 --** Grand Proctor Beryllia
 Id[2362] = {
-    Handlers = Stub_SpellsRegistrationHandlers
+    -- Handlers = Stub_SpellsRegistrationHandlers
+    Handlers = {
+        [CLEU] = {
+            function(Encounter, ...)
+                args = {...}
+                local Subevent = args[2]
+                local Target = args[9]
+                local SpellId = args[12]
+
+                if Subevent == "SPELL_DAMAGE" then
+                    local OverkillDamage = args[16]
+                    if OverkillDamage > 0 then
+                        local SpellName = args[13]
+
+                        if SpellName == "Rite of Supremacy" then
+                            print(SpellName, SpellId)
+                            if Encounter.IsMythic then
+                                AddMistake("GrandProctorBeryllia.RiteOfSupremacy.Mythic", Target)
+                            else
+                                AddMistake("GrandProctorBeryllia.RiteOfSupremacy.NonMythic", Target)
+                            end
+                        end
+                    end
+                end
+            end,
+        },
+    },
 }
 
 --** General Kaal
