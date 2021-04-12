@@ -3,18 +3,12 @@ local AT = AddonTable
 
 local ReportOnSuccess = false
 
-local function Assert (Condition, ErrorText)
-    if not Condition then
-        error(AddonName.." assertion fail: "..(ErrorText or "anonymous"))
-    end
-end
-
 local Cases = {}
 local function CheckIfAllCasesPassed()
     if not ReportOnSuccess then return end
 
     for _, Case in ipairs(Cases) do
-        if not Case.Passed then
+        if Case.Passed == nil then
             return
         end
     end
@@ -28,9 +22,11 @@ local function CheckIfAllCasesPassed()
 end
 
 local function NewCase(Title, Func)
+    if Func == nil then return end
+
     local Case = {}
     Case.Title = Title
-    Case.Passed = false
+    Case.Passed = nil
 
     local StartTime
 
@@ -45,8 +41,22 @@ local function NewCase(Title, Func)
         CheckIfAllCasesPassed()
     end
 
+    function Case:Assert(Condition, Text)
+        Text = self.Title..(Text and (": "..Text) or "")
+
+        if not Condition then
+            error(AddonName.." assertion fail: "..(Text))
+        end
+    end
+
     table.insert(Cases, Case)
     return Case
+end
+
+local function NewCaseOff(Title)
+    if Title then
+        print(AddonName..". Test case "..Title.." is off")
+    end
 end
 
 NewCase("TestErrorHandling", function(Case)
@@ -61,16 +71,16 @@ NewCase("TestErrorHandling", function(Case)
 
     local CaseText = "When wrapped with 'pcall' function raises an error, ";
     local CallResult = {pcall(FunctionWithError, true)}
-    Assert(CallResult[1] == false, CaseText.."first value returned by pcall should be false")
-    Assert(type(CallResult[2]) == "string", CaseText.."second value returned by pcall should be a string")
+    Case:Assert(CallResult[1] == false, CaseText.."first value returned by pcall should be false")
+    Case:Assert(type(CallResult[2]) == "string", CaseText.."second value returned by pcall should be a string")
     local SecondValueContainsErrorText = string.find(CallResult[2], "CustomErrorText") ~= 0
-    Assert(SecondValueContainsErrorText, CaseText.."second value returned by pcall should be containing an error text")
+    Case:Assert(SecondValueContainsErrorText, CaseText.."second value returned by pcall should be containing an error text")
 
     local CaseText = "When wrapped with 'pcall' function succeeds, ";
     local CallResult = {pcall(FunctionWithError, false)}
-    Assert(#CallResult == 1 + 3, CaseText.."pcall should return one value as a result of call plus all of the values returned by the wrapped function")
-    Assert(CallResult[1] == true, CaseText.."first value returned by pcall should be true")
-    Assert(
+    Case:Assert(#CallResult == 1 + 3, CaseText.."pcall should return one value as a result of call plus all of the values returned by the wrapped function")
+    Case:Assert(CallResult[1] == true, CaseText.."first value returned by pcall should be true")
+    Case:Assert(
         CallResult[2] == "OutValue1" and
         CallResult[3] == "OutValue2" and
         CallResult[4] == "OutValue3",
@@ -99,8 +109,8 @@ NewCase("TestToString", function(Case)
     local LoadTable = loadstring("return "..s)
     local t2 = LoadTable()
 
-    Assert(type(t2) == "table", "t2 not a table")
-    Assert(
+    Case:Assert(type(t2) == "table", "t2 not a table")
+    Case:Assert(
         type(t2) == "table" and
         t2.Husband.Hobbies[1] == "Football" and
         t2.Wife.Name == "Jane" and
@@ -116,19 +126,19 @@ NewCase("TestDelay", function(Case)
     t.val = 0
 
     local func2 = function(t)
-        Assert(t.val == 1, "delayfunc2 "..t.val)
+        Case:Assert(t.val == 1, "delayfunc2 "..t.val)
         Case:Pass()
     end
 
     local func1 = function(t)
-        Assert(t.val == 0, "delayfunc1 "..t.val)
+        Case:Assert(t.val == 0, "delayfunc1 "..t.val)
         t.val = 1
         AT.Delay(2, func2, t)
     end
 
     AT.Delay(1, func1, t)
 
-    Assert(t.val == 0)
+    Case:Assert(t.val == 0)
 end)
 
 NewCase("TestQueue", function(Case)
@@ -140,7 +150,7 @@ NewCase("TestQueue", function(Case)
     Q:AddTask(
         2,
         function(t)
-            Assert(t.val == 0, "delayfunc1 "..t.val)
+            Case:Assert(t.val == 0, "delayfunc1 "..t.val)
             t.val = 1
         end,
         t
@@ -149,7 +159,7 @@ NewCase("TestQueue", function(Case)
     Q:AddTask(
         1,
         function(t)
-            Assert(t.val == 1, "delayfunc2 "..t.val)
+            Case:Assert(t.val == 1, "delayfunc2 "..t.val)
             t.val = 2
         end,
         t
@@ -158,7 +168,7 @@ NewCase("TestQueue", function(Case)
     Q:AddTask(
         1,
         function(t)
-            Assert(t.val == 2, "delayfunc3 "..t.val)
+            Case:Assert(t.val == 2, "delayfunc3 "..t.val)
             Case:Pass()
         end,
         t
@@ -168,15 +178,28 @@ end)
 NewCase("TestStringSplit", function(Case)
     local str = "enabled 1"
     local t = {strsplit(" ", str)}
-    Assert(t[1] == "enabled")
-    Assert(t[2] == "1")
+    Case:Assert(t[1] == "enabled")
+    Case:Assert(t[2] == "1")
 
     local str = "enabled  1"
     local t = {strsplit(" ", str)}
-    Assert(t[1] == "enabled")
-    Assert(t[2] == "")
-    Assert(t[3] == "1")
+    Case:Assert(t[1] == "enabled")
+    Case:Assert(t[2] == "")
+    Case:Assert(t[3] == "1")
 
+    Case:Pass()
+end)
+
+NewCase("TestVarArgsUnpack", function(Case)
+    local n = nil
+    local t16 = {1, n, n, n, n, n, n, n, n, n, n, n, n, n, n, n, n, 4}
+    local t17 = {1, n, n, n, n, n, n, n, n, n, n, n, n, n, n, n, n, n, 4}
+
+    local a = #({unpack(t16)})
+    local b = #({unpack(t17)})
+
+    Case:Assert(a == 18)
+    Case:Assert(b == 1)
     Case:Pass()
 end)
 

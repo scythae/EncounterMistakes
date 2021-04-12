@@ -15,6 +15,8 @@ Core.Run = function()
     local f = CreateFrame("Frame", nil, UIParent)
     f:SetScript("OnEvent", Core.OnAddonLoaded)
     f:RegisterEvent("ADDON_LOADED")
+
+    Core.Frame = f
 end
 
 Core.OnAddonLoaded = function(Frame, Event, Name)
@@ -45,6 +47,14 @@ Core.OnAddonLoaded = function(Frame, Event, Name)
 end
 
 Core.OnEvent = function(Frame, Event, ...)
+    if Event == "COMBAT_LOG_EVENT_UNFILTERED" then
+        Core.OnEventInternal(Frame, Event, CombatLogGetCurrentEventInfo())
+    else
+        Core.OnEventInternal(Frame, Event, ...)
+    end
+end
+
+Core.OnEventInternal = function(Frame, Event, ...)
     if Event == "ENCOUNTER_START" then
         Core.OnEncounterStart(Frame, ...)
     end
@@ -110,11 +120,7 @@ Core.OnEncounterCustomEvent = function(Event, ...)
 
     local Handler = Encounter.Handlers[Event]
     if Handler then
-        if Event == "COMBAT_LOG_EVENT_UNFILTERED" then
-            Handler(Encounter, CombatLogGetCurrentEventInfo())
-        else
-            Handler(Encounter, ...)
-        end
+        Handler(Encounter, ...)
     end
 end
 
@@ -151,6 +157,7 @@ Core.AddMistake = function(MistakeName, Player)
 --     },
 --     ...
 -- }
+    if Player and not (UnitIsPlayer(Player) or UnitInParty(Player)) then return end
 
     local M = Encounter.Mistakes[MistakeName] or {}
 
@@ -211,8 +218,8 @@ Core.SlashCommands = {}
 Core.SlashCommands["help"] = function()
     Core.Report(AddonName..[[ slash commands:
 "/enmi help" - shows this help
-"/enmi test" - runs an example of failed fight against Mistcaller
 "/enmi smi 1" - turns ShowMistakesImmediately option on, 0 for turning off
+"/enmi test" - runs an example of failed fight against Mistcaller
 ]]
     )
 end
@@ -222,30 +229,32 @@ Core.SlashCommands["smi"] = function(Enabled)
 end
 
 Core.SlashCommands["test"] = function()
-    local OldEncounter
-    local M = Core.AddMistake
+    if Encounter then
+        print("There's already an active encounter")
+        return
+    end
+
+    local _ = 0
+
     local Q = AT.CreateQueue()
 
+    local function E(Time, Event, ...)
+        Q:AddTask(Time, Core.OnEventInternal, Core.Frame, Event, ...)
+    end
+
+    local CLEU = "COMBAT_LOG_EVENT_UNFILTERED"
+    local CleuArgs = function(Subevent, Target, SpellId)
+        return 0, Subevent, _, _, _, _, _, _, Target, _, _, SpellId, _, _, _
+    end
     local PlayerName = UnitName("player")
 
     Core.Trace("Starting encounter soon...")
-    Q:AddTask(1, function()
-        OldEncounter = Encounter
-        Core.StartEncounter(2392, "Mistcaller test")
-    end)
-    Q:AddTask(1, M, "Mistcaller.FrozenByFreezeTag", PlayerName)
-    Q:AddTask(0, M, "Mistcaller.ConfusedByCake", PlayerName)
-    Q:AddTask(0, M, "Mistcaller.ConfusedByCake", "Jack")
-    Q:AddTask(1, M, "Mistcaller.HitByDodgeBall", "Jeff")
-    Q:AddTask(0, M, "Mistcaller.HitByDodgeBall", "George")
-    Q:AddTask(0, M, "Mistcaller.HitByDodgeBall", "Jack")
-    Q:AddTask(0, M, "Mistcaller.HitByDodgeBall", "Jack")
-    Q:AddTask(0, M, "Mistcaller.HitByDodgeBall", PlayerName)
-    Q:AddTask(0, M, "Mistcaller.Oopsie")
-    Q:AddTask(0, function()
-        Core.EndEncounter(0)
-        Encounter = OldEncounter
-    end)
+    E(0, "ENCOUNTER_START", 2392, "Mistcaller")
+    E(1, CLEU, CleuArgs("SPELL_AURA_APPLIED", PlayerName, 321893)) -- Freezing Burst
+    E(1, CLEU, CleuArgs("SPELL_AURA_APPLIED", PlayerName, 321828)) -- Patty Cake
+    E(1, CLEU, CleuArgs("SPELL_DAMAGE", PlayerName, 321834)) -- Dodge Ball
+    E(1, CLEU, CleuArgs("SPELL_DAMAGE", PlayerName, 321837)) -- Oopsie
+    E(1, "ENCOUNTER_END", _, _, _, _, 0)
 end
 
 Core.SlashCommands["spells"] = function()
