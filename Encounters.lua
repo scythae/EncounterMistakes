@@ -77,12 +77,13 @@ local Stub_SpellsRegistrationHandlers = {
         local Subevent = args[2]
         if string.sub(Subevent, 1, 5) ~= "SPELL" then return end
 
+        local SpellId, SpellName
         if Subevent == "SPELL_ABSORBED" then
-            local SpellId = args[16]
-            local SpellName = args[17]
+            SpellId = args[16]
+            SpellName = args[17]
         else
-            local SpellId = args[12]
-            local SpellName = args[13]
+            SpellId = args[12]
+            SpellName = args[13]
         end
 
         if SpellId then
